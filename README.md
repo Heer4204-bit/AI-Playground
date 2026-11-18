@@ -15,15 +15,16 @@ With features like AI App Builder, Code Assistant, Creative Writer, and Data Ana
 - 🔗 Google Gemini API Integration
 
 # Project Architecture
-                          User Browser / UI Layer 
-                                      |
-                                      ▼
- Core Application Logic & State Management (Vanilla JS / React components) 
-                                      │
+                           [ User Browser / UI Layer ]
+       │
+       ▼
+[ Core Application Logic & State Management (Vanilla JS / React components) ]
+       │
        ├─────────────────────────┬─────────────────────────┐
-     ▼                             ▼                             ▼
- AI API Integration     Local Storage / State            UI Styling & Assets 
-(External Endpoints)   (User Preferences/Data)      (Tailwind CSS / CSS Grid)
+       ▼                         ▼                         ▼
+[ AI API Integration ]   [ Local Storage / State ]   [ UI Styling & Assets ]
+ (External Endpoints)    (User Preferences/Data)     (Tailwind CSS / CSS Grid)
+
 
 
 # Live Demo ▶️
