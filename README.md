@@ -15,9 +15,9 @@ With features like AI App Builder, Code Assistant, Creative Writer, and Data Ana
 - 🔗 Google Gemini API Integration
 
 # Project Architecture
- User Browser / UI Layer 
-       │
-       ▼
+                          User Browser / UI Layer 
+                                      |
+                                      ▼
  Core Application Logic & State Management (Vanilla JS / React components) 
        │
        ├─────────────────────────┬─────────────────────────┐
