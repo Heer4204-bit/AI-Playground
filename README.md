@@ -22,6 +22,7 @@ With features like AI App Builder, Code Assistant, Creative Writer, and Data Ana
                                       │
        ├─────────────────────────┬─────────────────────────┐
        ▼                             ▼                             ▼
+
 AI API Integration       Local Storage / State            UI Styling & Assets 
 (External Endpoints)    (User Preferences/Data)     (Tailwind CSS / CSS Grid)
 
@@ -30,4 +31,4 @@ AI API Integration       Local Storage / State            UI Styling & Assets
 # Live Demo ▶️
 https://heer4204-bit.github.io/AI-Playground/
 
-# Developed by Heer Patel
+# Developed by Heer Patel 👨‍💻
