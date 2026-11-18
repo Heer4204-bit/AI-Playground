@@ -20,7 +20,7 @@ With features like AI App Builder, Code Assistant, Creative Writer, and Data Ana
                                       ▼
             Core Application Logic & State Management (Vanilla JS / React components) 
                                       │
-       ├─────────────────────────┬─────────────────────────┐
+        ├─────────────────────────┬─────────────────────────┐
        ▼                         ▼                         ▼
  AI API Integration  Local Storage / State     UI Styling & Assets 
  
