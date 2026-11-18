@@ -22,9 +22,8 @@ With features like AI App Builder, Code Assistant, Creative Writer, and Data Ana
                                       │
        ├─────────────────────────┬─────────────────────────┐
        ▼                             ▼                             ▼
- AI API Integration  Local Storage / State     UI Styling & Assets 
- 
- (External Endpoints)    (User Preferences/Data)     (Tailwind CSS / CSS Grid)
+AI API Integration       Local Storage / State            UI Styling & Assets 
+(External Endpoints)    (User Preferences/Data)     (Tailwind CSS / CSS Grid)
 
 
 
