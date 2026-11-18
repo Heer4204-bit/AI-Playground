@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Playground</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Marked.js for Markdown Rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js for Code Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/styles/atom-one-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.8.0/highlight.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            400: '#818cf8',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 font-sans antialiased transition-colors duration-200 overflow-x-hidden min-h-screen flex flex-col">
+
+    <!-- Toast Notification Banner -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-30 backdrop-blur-md bg-white/80 dark:bg-slate-900/80 border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <!-- Mobile Sidebar Toggle -->
+            <button id="mobile-menu-btn" class="lg:hidden p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors" aria-label="Toggle History Sidebar">
+                <i class="fa-solid fa-bars text-lg"></i>
+            </button>
+            
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-500 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30">
+                    <i class="fa-solid fa-wand-magic-sparkles text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-base sm:text-lg tracking-tight bg-gradient-to-r from-indigo-600 to-purple-500 dark:from-indigo-400 dark:to-purple-400 bg-clip-text text-transparent">
+                        AI Playground
+                    </h1>
+                    <p class="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block">Prompt to Live Interactive App & Insights</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 sm:gap-3">
+            <!-- API Status Badge -->
+            <div id="api-status-badge" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Gemini Live Ready</span>
+            </div>
+
+            <!-- Optional Custom API Key Modal Trigger -->
+            <button id="api-settings-btn" class="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition-all text-xs font-medium flex items-center gap-1.5" title="Configure API Key (Optional)">
+                <i class="fa-solid fa-key text-indigo-500"></i>
+                <span class="hidden md:inline">API Key</span>
+            </button>
+
+            <!-- Theme Toggle -->
+            <button id="theme-toggle" class="p-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition-all" aria-label="Toggle Dark/Light Theme">
+                <i id="theme-icon" class="fa-solid fa-sun text-amber-400"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Layout Container -->
+    <div class="flex-1 flex relative overflow-hidden">
+        
+        <!-- Mobile Backdrop -->
+        <div id="sidebar-backdrop" class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-30 hidden lg:hidden"></div>
+
+        <!-- Left Sidebar: Prompt History -->
+        <aside id="history-sidebar" class="fixed lg:static inset-y-0 left-0 z-40 w-80 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out h-[calc(100vh-61px)]">
+            
+            <!-- Sidebar Header -->
+            <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-indigo-500"></i>
+                    <h2 class="font-semibold text-sm">Prompt History</h2>
+                    <span id="history-count" class="px-2 py-0.5 text-xs rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-medium">0</span>
+                </div>
+                <button id="clear-history-btn" class="text-xs text-rose-500 hover:text-rose-600 dark:hover:text-rose-400 font-medium px-2 py-1 rounded-lg hover:bg-rose-500/10 transition-colors" title="Clear All History">
+                    Clear
+                </button>
+            </div>
+
+            <!-- Search History Input -->
+            <div class="p-3 border-b border-slate-200 dark:border-slate-800">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="history-search" placeholder="Search previous prompts..." class="w-full pl-8 pr-3 py-2 text-xs rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-transparent focus:border-indigo-500 focus:bg-white dark:focus:bg-slate-900 outline-none transition-all">
+                </div>
+            </div>
+
+            <!-- History Items List -->
+            <div id="history-list" class="flex-1 overflow-y-auto p-3 space-y-2">
+                <!-- Empty State -->
+                <div id="history-empty" class="text-center py-12 px-4">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center mx-auto mb-3 text-slate-400">
+                        <i class="fa-regular fa-folder-open text-xl"></i>
+                    </div>
+                    <p class="text-xs font-medium text-slate-600 dark:text-slate-300">No history yet</p>
+                    <p class="text-[11px] text-slate-400 mt-1">Your generated prompts and apps will appear here automatically.</p>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden h-[calc(100vh-61px)]">
+            
+            <!-- Left/Top Panel: Prompt Composer -->
+            <section class="w-full lg:w-[44%] xl:w-[40%] p-4 sm:p-6 border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 flex flex-col gap-5 overflow-y-auto bg-slate-50/50 dark:bg-slate-950/50">
+                
+                <!-- Persona / Mode Selector -->
+                <div>
+                    <label class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
+                        1. Select AI Model Persona
+                    </label>
+                    <div class="grid grid-cols-2 gap-2" id="persona-grid">
+                        <button type="button" data-persona="app-builder" class="persona-btn active flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all border-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 shadow-sm">
+                            <i class="fa-solid fa-window-maximize text-indigo-500"></i>
+                            <div>
+                                <div class="text-xs font-semibold">App Builder</div>
+                                <div class="text-[10px] opacity-75">Live HTML/JS UI</div>
+                            </div>
+                        </button>
+
+                        <button type="button" data-persona="code-assistant" class="persona-btn flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-400 text-left transition-all">
+                            <i class="fa-solid fa-code text-emerald-500"></i>
+                            <div>
+                                <div class="text-xs font-semibold">Code Assistant</div>
+                                <div class="text-[10px] text-slate-500 dark:text-slate-400">Clean Algorithms</div>
+                            </div>
+                        </button>
+
+                        <button type="button" data-persona="creative-writer" class="persona-btn flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-400 text-left transition-all">
+                            <i class="fa-solid fa-feather-pointed text-purple-500"></i>
+                            <div>
+                                <div class="text-xs font-semibold">Creative Writer</div>
+                                <div class="text-[10px] text-slate-500 dark:text-slate-400">Stories & Copy</div>
+                            </div>
+                        </button>
+
+                        <button type="button" data-persona="data-analyst" class="persona-btn flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-400 text-left transition-all">
+                            <i class="fa-solid fa-chart-pie text-amber-500"></i>
+                            <div>
+                                <div class="text-xs font-semibold">Data Analyst</div>
+                                <div class="text-[10px] text-slate-500 dark:text-slate-400">Insights & Visuals</div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Starter Chips -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            Quick Starter Prompts
+                        </label>
+                        <span class="text-[11px] text-slate-400">Click to try</span>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" class="starter-chip text-xs px-3 py-1.5 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all shadow-sm flex items-center gap-1.5" data-persona="app-builder" data-prompt="Build a sleek, functional Pomodoro Timer web app with start, pause, reset controls, session counter, and modern Tailwind styling.">
+                            <span>⏱️ Pomodoro Timer App</span>
+                        </button>
+                        <button type="button" class="starter-chip text-xs px-3 py-1.5 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all shadow-sm flex items-center gap-1.5" data-persona="app-builder" data-prompt="Create an interactive SaaS Pricing Card UI with a Monthly/Yearly billing toggle switch that dynamically updates prices and highlights the Pro plan.">
+                            <span>💳 Interactive Pricing Card</span>
+                        </button>
+                        <button type="button" class="starter-chip text-xs px-3 py-1.5 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all shadow-sm flex items-center gap-1.5" data-persona="app-builder" data-prompt="Generate an interactive Daily Workout Tracker app where users can log exercises, sets, reps, and check off completed workouts with a progress bar.">
+                            <span>💪 Workout Tracker App</span>
+                        </button>
+                        <button type="button" class="starter-chip text-xs px-3 py-1.5 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500 dark:hover:border-indigo-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all shadow-sm flex items-center gap-1.5" data-persona="creative-writer" data-prompt="Explain Quantum Computing simply using everyday analogies, bullet points, and a short summary table.">
+                            <span>⚛️ Explain Quantum Computing</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Prompt Textarea Box -->
+                <div class="flex-1 flex flex-col min-h-[180px]">
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="prompt-input" class="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                            2. Enter Your Prompt
+                        </label>
+                        <button type="button" id="clear-prompt-btn" class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                            Clear text
+                        </button>
+                    </div>
+                    <div class="relative flex-1 flex flex-col">
+                        <textarea id="prompt-input" placeholder="Describe an app to build, code to write, or topic to explore... (e.g., 'Build an interactive expense calculator with charts')" class="w-full flex-1 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 outline-none resize-none text-sm leading-relaxed transition-all shadow-sm"></textarea>
+                        <div class="mt-2 flex items-center justify-between text-[11px] text-slate-400">
+                            <span>Tip: Press <kbd class="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-800 font-mono text-[10px]">Ctrl + Enter</kbd> to generate</span>
+                            <span id="char-count">0 chars</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Generate Action Button -->
+                <button id="generate-btn" class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 active:scale-[0.99] transition-all flex items-center justify-center gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-sparkles"></i>
+                    <span id="generate-btn-text">Generate Response</span>
+                </button>
+            </section>
+
+            <!-- Right/Bottom Panel: Interactive Result Viewer -->
+            <section class="flex-1 flex flex-col bg-white dark:bg-slate-900/40 overflow-hidden min-h-[500px]">
+                
+                <!-- Result Viewer Header & Tabs -->
+                <div class="px-4 py-3 border-b border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md flex flex-wrap items-center justify-between gap-3">
+                    
+                    <!-- Tabs -->
+                    <div class="flex items-center p-1 rounded-xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200/60 dark:border-slate-700/60">
+                        <button type="button" data-tab="preview" class="result-tab active px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm flex items-center gap-1.5">
+                            <i class="fa-solid fa-play text-[10px]"></i>
+                            <span>Interactive Preview</span>
+                        </button>
+                        <button type="button" data-tab="formatted" class="result-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-align-left text-[10px]"></i>
+                            <span>Formatted Response</span>
+                        </button>
+                        <button type="button" data-tab="raw" class="result-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-code text-[10px]"></i>
+                            <span>Raw Output</span>
+                        </button>
+                    </div>
+
+                    <!-- Result Utility Actions -->
+                    <div class="flex items-center gap-2">
+                        <span id="mode-indicator-badge" class="hidden sm:inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                            Ready
+                        </span>
+                        <button id="copy-output-btn" class="px-3 py-1.5 rounded-xl text-xs font-medium bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-colors flex items-center gap-1.5" title="Copy Result to Clipboard">
+                            <i class="fa-regular fa-copy"></i>
+                            <span>Copy</span>
+                        </button>
+                        <button id="download-html-btn" class="hidden px-3 py-1.5 rounded-xl text-xs font-medium bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 transition-colors flex items-center gap-1.5" title="Download as Standalone HTML">
+                            <i class="fa-solid fa-download"></i>
+                            <span class="hidden sm:inline">Export App</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Result Content Area -->
+                <div class="flex-1 relative overflow-hidden flex flex-col">
+                    
+                    <!-- Loading Overlay -->
+                    <div id="loading-overlay" class="hidden absolute inset-0 z-20 bg-white/80 dark:bg-slate-950/80 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+                        <div class="relative w-16 h-16 mb-4">
+                            <div class="absolute inset-0 rounded-full border-4 border-indigo-500/20"></div>
+                            <div class="absolute inset-0 rounded-full border-4 border-indigo-500 border-t-transparent animate-spin"></div>
+                            <i class="fa-solid fa-wand-magic-sparkles text-indigo-500 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-lg animate-pulse"></i>
+                        </div>
+                        <h3 class="text-base font-semibold text-slate-800 dark:text-slate-100">Synthesizing AI Response...</h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-xs">Building interactive UI components and formatting output with Gemini.</p>
+                    </div>
+
+                    <!-- Initial Welcome Empty State -->
+                    <div id="result-empty-state" class="flex-1 flex flex-col items-center justify-center p-8 text-center">
+                        <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-indigo-500/10 to-purple-500/10 border border-indigo-500/20 flex items-center justify-center mb-4 text-indigo-500">
+                            <i class="fa-solid fa-laptop-code text-2xl"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">Your Interactive Canvas Awaits</h3>
+                        <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 max-w-md leading-relaxed">
+                            Select a persona on the left, enter a prompt (or click a starter chip), and watch the AI generate live interactive apps, clean code, or rich formatted analysis.
+                        </p>
+                    </div>
+
+                    <!-- Tab 1: Interactive Sandboxed Preview -->
+                    <div id="view-preview" class="hidden flex-1 flex flex-col h-full bg-slate-100 dark:bg-slate-950">
+                        <div id="preview-notice" class="hidden px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-amber-700 dark:text-amber-300 text-xs flex items-center justify-between">
+                            <span><i class="fa-solid fa-circle-info mr-1.5"></i> This response is text-based. Showing rendered card view (switch to <b>Formatted Response</b> for full details).</span>
+                        </div>
+                        <iframe id="sandbox-iframe" sandbox="allow-scripts allow-forms allow-modals" class="w-full flex-1 border-0 bg-white"></iframe>
+                    </div>
+
+                    <!-- Tab 2: Formatted Markdown Response -->
+                    <div id="view-formatted" class="hidden flex-1 overflow-y-auto p-6 sm:p-8">
+                        <div id="formatted-content" class="max-w-3xl mx-auto space-y-4 text-sm leading-relaxed text-slate-800 dark:text-slate-200"></div>
+                    </div>
+
+                    <!-- Tab 3: Raw Output -->
+                    <div id="view-raw" class="hidden flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-950">
+                        <pre id="raw-content" class="font-mono text-xs text-emerald-400 whitespace-pre-wrap break-words leading-relaxed"></pre>
+                    </div>
+
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Custom API Key Modal (Optional Override) -->
+    <div id="api-modal" class="hidden fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-base flex items-center gap-2">
+                    <i class="fa-solid fa-key text-indigo-500"></i>
+                    <span>Gemini API Configuration</span>
+                </h3>
+                <button id="close-api-modal" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
+                This playground automatically connects to Gemini in supported environments. If you are running this file standalone locally, you can optionally paste your Google Gemini API key below (stored locally in your browser).
+            </p>
+            <input type="password" id="custom-api-key-input" placeholder="AIzaSy..." class="w-full px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-mono mb-4 focus:border-indigo-500 outline-none">
+            <div class="flex items-center justify-end gap-2">
+                <button id="clear-api-key-btn" class="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">Reset Default</button>
+                <button id="save-api-key-btn" class="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md">Save Key</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        /**
+         * AI Model-to-App Playground
+         * Complete self-contained logic for Gemini API integration,
+         * sandboxed iframe rendering, markdown parsing, and localStorage history.
+         */
+
+        // Environment-injected API key (left empty string by default for runtime injection)
+        const ENV_API_KEY = "";
+
+        // Application State
+        const state = {
+            persona: 'app-builder',
+            activeTab: 'preview',
+            currentResponse: '',
+            currentExtractedHtml: '',
+            history: [],
+            customApiKey: localStorage.getItem('playground_custom_api_key') || '',
+            isGenerating: false
+        };
+
+        // System Instructions tailored to each persona
+        const PERSONA_CONFIG = {
+            'app-builder': {
+                label: 'App Builder',
+                icon: 'fa-window-maximize',
+                color: 'text-indigo-500',
+                systemPrompt: `You are an expert Frontend UI Engineer and App Builder. When given a user prompt, create a complete, self-contained, single-file interactive HTML/CSS/JS application.
+Rules:
+1. Always include Tailwind CSS via CDN (<script src="https://cdn.tailwindcss.com"><\/script>) inside your HTML document so it looks sleek and modern.
+2. Wrap the complete runnable HTML code inside a single \`\`\`html code block.
+3. Make sure all buttons, forms, timers, or interactive widgets work smoothly with vanilla JavaScript inside that HTML file.
+4. Keep any explanation brief outside the code block.`
+            },
+            'code-assistant': {
+                label: 'Code Assistant',
+                icon: 'fa-code',
+                color: 'text-emerald-500',
+                systemPrompt: `You are a Senior Software Architect and Code Assistant. Provide clean, well-commented, production-ready code solutions with clear explanations of time/space complexity and edge cases. Use proper markdown code blocks.`
+            },
+            'creative-writer': {
+                label: 'Creative Writer',
+                icon: 'fa-feather-pointed',
+                color: 'text-purple-500',
+                systemPrompt: `You are an engaging, eloquent Creative Writer and Communicator. Craft vivid, well-structured, easy-to-read content using headings, bullet points, analogies, and clear formatting.`
+            },
+            'data-analyst': {
+                label: 'Data Analyst',
+                icon: 'fa-chart-pie',
+                color: 'text-amber-500',
+                systemPrompt: `You are a Lead Data Analyst. Analyze prompts logically, structure insights with markdown tables, key takeaways, metrics, and actionable recommendations. If asked for a visual dashboard, provide a self-contained HTML snippet with Chart.js or Tailwind cards.`
+            }
+        };
+
+        // DOM Elements Reference
+        const els = {
+            themeToggle: document.getElementById('theme-toggle'),
+            themeIcon: document.getElementById('theme-icon'),
+            mobileMenuBtn: document.getElementById('mobile-menu-btn'),
+            sidebar: document.getElementById('history-sidebar'),
+            sidebarBackdrop: document.getElementById('sidebar-backdrop'),
+            historyList: document.getElementById('history-list'),
+            historyEmpty: document.getElementById('history-empty'),
+            historyCount: document.getElementById('history-count'),
+            historySearch: document.getElementById('history-search'),
+            clearHistoryBtn: document.getElementById('clear-history-btn'),
+            personaBtns: document.querySelectorAll('.persona-btn'),
+            starterChips: document.querySelectorAll('.starter-chip'),
+            promptInput: document.getElementById('prompt-input'),
+            charCount: document.getElementById('char-count'),
+            clearPromptBtn: document.getElementById('clear-prompt-btn'),
+            generateBtn: document.getElementById('generate-btn'),
+            generateBtnText: document.getElementById('generate-btn-text'),
+            resultTabs: document.querySelectorAll('.result-tab'),
+            loadingOverlay: document.getElementById('loading-overlay'),
+            resultEmptyState: document.getElementById('result-empty-state'),
+            viewPreview: document.getElementById('view-preview'),
+            viewFormatted: document.getElementById('view-formatted'),
+            viewRaw: document.getElementById('view-raw'),
+            previewNotice: document.getElementById('preview-notice'),
+            sandboxIframe: document.getElementById('sandbox-iframe'),
+            formattedContent: document.getElementById('formatted-content'),
+            rawContent: document.getElementById('raw-content'),
+            copyOutputBtn: document.getElementById('copy-output-btn'),
+            downloadHtmlBtn: document.getElementById('download-html-btn'),
+            modeIndicatorBadge: document.getElementById('mode-indicator-badge'),
+            apiSettingsBtn: document.getElementById('api-settings-btn'),
+            apiModal: document.getElementById('api-modal'),
+            closeApiModal: document.getElementById('close-api-modal'),
+            customApiKeyInput: document.getElementById('custom-api-key-input'),
+            saveApiKeyBtn: document.getElementById('save-api-key-btn'),
+            clearApiKeyBtn: document.getElementById('clear-api-key-btn'),
+            toastContainer: document.getElementById('toast-container')
+        };
+
+        // Initialize Application
+        function init() {
+            loadTheme();
+            loadHistoryFromStorage();
+            setupEventListeners();
+            updateCharCount();
+        }
+
+        // Theme Management
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('playground_theme') || 'dark';
+            if (savedTheme === 'dark') {
+                document.documentElement.classList.add('dark');
+                els.themeIcon.className = 'fa-solid fa-sun text-amber-400';
+            } else {
+                document.documentElement.classList.remove('dark');
+                els.themeIcon.className = 'fa-solid fa-moon text-slate-700';
+            }
+        }
+
+        function toggleTheme() {
+            const isDark = document.documentElement.classList.toggle('dark');
+            localStorage.setItem('playground_theme', isDark ? 'dark' : 'light');
+            els.themeIcon.className = isDark 
+                ? 'fa-solid fa-sun text-amber-400' 
+                : 'fa-solid fa-moon text-slate-700';
+        }
+
+        // Toast Notification Utility (replaces alert/confirm)
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            const colors = {
+                success: 'bg-emerald-600 text-white',
+                error: 'bg-rose-600 text-white',
+                info: 'bg-slate-800 dark:bg-slate-700 text-white',
+                warning: 'bg-amber-600 text-white'
+            };
+            const icons = {
+                success: 'fa-circle-check',
+                error: 'fa-circle-exclamation',
+                info: 'fa-circle-info',
+                warning: 'fa-triangle-exclamation'
+            };
+            toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl text-xs font-medium transform translate-y-2 opacity-0 transition-all duration-300 ${colors[type] || colors.info}`;
+            toast.innerHTML = `<i class="fa-solid ${icons[type]}"></i><span>${message}</span>`;
+            els.toastContainer.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        // Sidebar Mobile Drawer Toggle
+        function toggleMobileSidebar(forceState) {
+            const isOpen = typeof forceState === 'boolean' 
+                ? forceState 
+                : els.sidebar.classList.contains('-translate-x-full');
+            
+            if (isOpen) {
+                els.sidebar.classList.remove('-translate-x-full');
+                els.sidebarBackdrop.classList.remove('hidden');
+            } else {
+                els.sidebar.classList.add('-translate-x-full');
+                els.sidebarBackdrop.classList.add('hidden');
+            }
+        }
+
+        // Persona Selection
+        function selectPersona(personaKey) {
+            state.persona = personaKey;
+            els.personaBtns.forEach(btn => {
+                const isSelected = btn.dataset.persona === personaKey;
+                if (isSelected) {
+                    btn.className = 'persona-btn active flex items-center gap-2.5 p-3 rounded-xl border text-left transition-all border-indigo-500 bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 shadow-sm';
+                } else {
+                    btn.className = 'persona-btn flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-indigo-400 text-left transition-all';
+                }
+            });
+        }
+
+        // Tab Switching in Result Viewer
+        function switchTab(tabName) {
+            state.activeTab = tabName;
+            els.resultTabs.forEach(tab => {
+                const isSelected = tab.dataset.tab === tabName;
+                if (isSelected) {
+                    tab.className = 'result-tab active px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all bg-white dark:bg-slate-900 text-indigo-600 dark:text-indigo-400 shadow-sm flex items-center gap-1.5';
+                } else {
+                    tab.className = 'result-tab px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 flex items-center gap-1.5';
+                }
+            });
+
+            if (!state.currentResponse) return;
+
+            els.viewPreview.classList.toggle('hidden', tabName !== 'preview');
+            els.viewFormatted.classList.toggle('hidden', tabName !== 'formatted');
+            els.viewRaw.classList.toggle('hidden', tabName !== 'raw');
+        }
+
+        // Extract HTML block from Markdown response if present
+        function extractHtmlFromResponse(markdownText) {
+            // Match ```html ... ``` or complete <!DOCTYPE html> ... </html>
+            const htmlFenceRegex = /```html\s*([\s\S]*?)```/i;
+            const match = markdownText.match(htmlFenceRegex);
+            if (match && match[1]) {
+                return match[1].trim();
+            }
+
+            const docTypeRegex = /(<!DOCTYPE html[\s\S]*<\/html>)/i;
+            const docMatch = markdownText.match(docTypeRegex);
+            if (docMatch && docMatch[1]) {
+                return docMatch[1].trim();
+            }
+
+            return null;
+        }
+
+        // Render Response across all 3 views
+        function renderResponse(rawText, isDemoFallback = false) {
+            state.currentResponse = rawText;
+            const extractedHtml = extractHtmlFromResponse(rawText);
+            state.currentExtractedHtml = extractedHtml;
+
+            els.resultEmptyState.classList.add('hidden');
+            els.modeIndicatorBadge.textContent = isDemoFallback ? 'Demo Sandbox Mode' : 'Gemini 3 Flash';
+            els.modeIndicatorBadge.className = isDemoFallback
+                ? 'hidden sm:inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                : 'hidden sm:inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20';
+
+            // 1. Raw Output
+            els.rawContent.textContent = rawText;
+
+            // 2. Formatted Markdown Output
+            if (typeof marked !== 'undefined') {
+                els.formattedContent.innerHTML = marked.parse(rawText);
+                // Style generated markdown elements with Tailwind classes
+                styleMarkdownElements(els.formattedContent);
+            } else {
+                els.formattedContent.innerHTML = `<pre class="whitespace-pre-wrap">${escapeHtml(rawText)}</pre>`;
+            }
+
+            // 3. Interactive Preview (Iframe)
+            if (extractedHtml) {
+                els.previewNotice.classList.add('hidden');
+                els.sandboxIframe.srcdoc = extractedHtml;
+                els.downloadHtmlBtn.classList.remove('hidden');
+                switchTab('preview');
+            } else {
+                // Wrap formatted markdown inside a clean styled HTML document for the preview frame
+                els.previewNotice.classList.remove('hidden');
+                els.downloadHtmlBtn.classList.add('hidden');
+                const renderedBody = typeof marked !== 'undefined' ? marked.parse(rawText) : `<p>${escapeHtml(rawText)}</p>`;
+                els.sandboxIframe.srcdoc = `
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset="UTF-8">
+                        <script src="https://cdn.tailwindcss.com"><\/script>
+                        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+                        <style>
+                            body { font-family: 'Inter', sans-serif; padding: 2rem; background: #f8fafc; color: #0f172a; line-height: 1.65; }
+                            h1, h2, h3 { font-weight: 700; margin-top: 1.25em; margin-bottom: 0.5em; color: #1e293b; }
+                            h1 { font-size: 1.5rem; } h2 { font-size: 1.25rem; }
+                            p { margin-bottom: 1em; }
+                            ul, ol { margin-left: 1.5rem; margin-bottom: 1em; list-style-type: disc; }
+                            code { background: #e2e8f0; padding: 0.15rem 0.4rem; border-radius: 0.375rem; font-size: 0.875em; }
+                            pre { background: #0f172a; color: #f8fafc; padding: 1rem; border-radius: 0.75rem; overflow-x: auto; margin-bottom: 1em; }
+                            pre code { background: transparent; padding: 0; color: inherit; }
+                            table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+                            th, td { border: 1px solid #cbd5e1; padding: 0.6rem; text-align: left; }
+                            th { background: #f1f5f9; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-slate-200">
+                            ${renderedBody}
+                        </div>
+                    </body>
+                    </html>
+                `;
+                // Switch to formatted tab automatically for text responses, while keeping preview accessible
+                switchTab('formatted');
+            }
+        }
+
+        // Apply clean Tailwind typography & copy buttons to rendered Markdown
+        function styleMarkdownElements(container) {
+            container.querySelectorAll('h1').forEach(el => el.className = 'text-xl font-bold mt-4 mb-2 text-slate-900 dark:text-white');
+            container.querySelectorAll('h2').forEach(el => el.className = 'text-lg font-bold mt-4 mb-2 text-slate-900 dark:text-white');
+            container.querySelectorAll('h3').forEach(el => el.className = 'text-base font-semibold mt-3 mb-1.5 text-slate-800 dark:text-slate-100');
+            container.querySelectorAll('ul').forEach(el => el.className = 'list-disc pl-5 space-y-1 my-2');
+            container.querySelectorAll('ol').forEach(el => el.className = 'list-decimal pl-5 space-y-1 my-2');
+            container.querySelectorAll('table').forEach(el => el.className = 'w-full border-collapse border border-slate-300 dark:border-slate-700 my-4 text-xs');
+            container.querySelectorAll('th').forEach(el => el.className = 'border border-slate-300 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-3 py-2 text-left font-semibold');
+            container.querySelectorAll('td').forEach(el => el.className = 'border border-slate-300 dark:border-slate-700 px-3 py-2');
+
+            container.querySelectorAll('pre').forEach(pre => {
+                pre.className = 'relative group rounded-xl bg-slate-900 text-slate-100 p-4 my-3 overflow-x-auto font-mono text-xs border border-slate-800';
+                const code = pre.querySelector('code');
+                if (code && typeof hljs !== 'undefined') {
+                    hljs.highlightElement(code);
+                }
+
+                // Add copy button to each code block
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'absolute top-2.5 right-2.5 px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px] font-sans opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1';
+                copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy';
+                copyBtn.onclick = () => {
+                    copyToClipboard(code ? code.textContent : pre.textContent);
+                    copyBtn.innerHTML = '<i class="fa-solid fa-check text-emerald-400"></i> Copied';
+                    setTimeout(() => copyBtn.innerHTML = '<i class="fa-regular fa-copy"></i> Copy', 2000);
+                };
+                pre.appendChild(copyBtn);
+            });
+        }
+
+        // Gemini API Integration with Exponential Backoff
+        async function callGeminiAPI(prompt, personaKey) {
+            const apiKey = state.customApiKey || ENV_API_KEY;
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+            const personaInfo = PERSONA_CONFIG[personaKey] || PERSONA_CONFIG['app-builder'];
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                systemInstruction: {
+                    parts: [{ text: personaInfo.systemPrompt }]
+                }
+            };
+
+            const maxRetries = 3;
+            const delays = [1000, 2000, 4000];
+
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    if (!response.ok) {
+                        if (response.status === 429 && attempt < maxRetries) {
+                            await new Promise(res => setTimeout(res, delays[attempt]));
+                            continue;
+                        }
+                        throw new Error(`API_ERROR_${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!text) {
+                        throw new Error('EMPTY_RESPONSE');
+                    }
+                    return { text, isDemo: false };
+
+                } catch (err) {
+                    if (attempt === maxRetries) {
+                        // Graceful fallback if API key is missing in standalone offline mode
+                        return {
+                            text: generateSmartDemoFallback(prompt, personaKey),
+                            isDemo: true
+                        };
+                    }
+                    await new Promise(res => setTimeout(res, delays[attempt]));
+                }
+            }
+        }
+
+        // Graceful Standalone Demo Fallback Generator
+        function generateSmartDemoFallback(prompt, personaKey) {
+            const pLower = prompt.toLowerCase();
+
+            if (pLower.includes('pomodoro') || pLower.includes('timer')) {
+                return `Here is an interactive **Pomodoro Focus Timer** generated in standalone fallback mode (connect a Gemini API key for custom AI generations):\n\n\`\`\`html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script src="https://cdn.tailwindcss.com"><\/script>
+</head>
+<body class="bg-slate-950 text-white min-h-screen flex items-center justify-center p-4 font-sans">
+  <div class="bg-slate-900 border border-slate-800 rounded-3xl p-8 max-w-sm w-full text-center shadow-2xl">
+    <span class="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-400">FOCUS SESSION</span>
+    <div id="timer" class="text-6xl font-bold my-6 font-mono tracking-tight">25:00</div>
+    <div class="flex justify-center gap-3 mb-6">
+      <button onclick="startTimer()" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-sm transition">Start</button>
+      <button onclick="pauseTimer()" class="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 font-semibold text-sm transition">Pause</button>
+      <button onclick="resetTimer()" class="px-5 py-2.5 rounded-xl bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 font-semibold text-sm transition">Reset</button>
+    </div>
+    <p class="text-xs text-slate-400">Completed Sessions: <strong id="sessions" class="text-white">0</strong></p>
+  </div>
+  <script>
+    let time = 25 * 60, interval = null, sessions = 0;
+    function updateDisplay() {
+      const m = String(Math.floor(time / 60)).padStart(2, '0');
+      const s = String(time % 60).padStart(2, '0');
+      document.getElementById('timer').textContent = m + ':' + s;
+    }
+    function startTimer() {
+      if (interval) return;
+      interval = setInterval(() => {
+        if (time > 0) { time--; updateDisplay(); }
+        else { clearInterval(interval); interval = null; sessions++; document.getElementById('sessions').textContent = sessions; time = 25 * 60; updateDisplay(); }
+      }, 1000);
+    }
+    function pauseTimer() { clearInterval(interval); interval = null; }
+    function resetTimer() { pauseTimer(); time = 25 * 60; updateDisplay(); }
+  <\/script>
+</body>
+</html>
+\`\`\``;
+            }
+
+            if (pLower.includes('pricing')) {
+                return `Here is an interactive **SaaS Pricing Card UI** with dynamic billing toggle:\n\n\`\`\`html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script src="https://cdn.tailwindcss.com"><\/script>
+</head>
+<body class="bg-slate-50 text-slate-900 min-h-screen flex flex-col items-center justify-center p-6 font-sans">
+  <div class="text-center mb-8">
+    <h2 class="text-2xl font-bold">Simple, Transparent Pricing</h2>
+    <div class="mt-4 inline-flex items-center gap-3 bg-white p-1.5 rounded-full border shadow-sm">
+      <button id="btn-m" onclick="setBilling('monthly')" class="px-4 py-1.5 rounded-full text-xs font-semibold bg-indigo-600 text-white">Monthly</button>
+      <button id="btn-y" onclick="setBilling('yearly')" class="px-4 py-1.5 rounded-full text-xs font-semibold text-slate-600">Yearly (Save 20%)</button>
+    </div>
+  </div>
+  <div class="grid sm:grid-cols-2 gap-6 max-w-2xl w-full">
+    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+      <h3 class="font-bold text-lg">Starter</h3>
+      <div class="text-3xl font-extrabold my-3">$<span id="price-starter">19</span><span class="text-sm font-normal text-slate-500">/mo</span></div>
+      <ul class="text-sm text-slate-600 space-y-2 mb-6"><li>✓ 10 Projects</li><li>✓ Basic Analytics</li><li>✓ Community Support</li></ul>
+      <button onclick="this.textContent='Selected!'" class="w-full py-2.5 rounded-xl bg-slate-900 text-white text-xs font-semibold">Choose Starter</button>
+    </div>
+    <div class="bg-indigo-600 text-white p-6 rounded-2xl shadow-xl">
+      <div class="flex justify-between items-center"><h3 class="font-bold text-lg">Pro</h3><span class="text-[10px] bg-white/20 px-2 py-0.5 rounded-full">POPULAR</span></div>
+      <div class="text-3xl font-extrabold my-3">$<span id="price-pro">49</span><span class="text-sm font-normal text-indigo-200">/mo</span></div>
+      <ul class="text-sm text-indigo-100 space-y-2 mb-6"><li>✓ Unlimited Projects</li><li>✓ AI Studio Access</li><li>✓ Priority 24/7 Support</li></ul>
+      <button onclick="this.textContent='Selected!'" class="w-full py-2.5 rounded-xl bg-white text-indigo-600 text-xs font-semibold">Choose Pro</button>
+    </div>
+  </div>
+  <script>
+    function setBilling(type) {
+      const isY = type === 'yearly';
+      document.getElementById('price-starter').textContent = isY ? '15' : '19';
+      document.getElementById('price-pro').textContent = isY ? '39' : '49';
+      document.getElementById('btn-m').className = isY ? 'px-4 py-1.5 rounded-full text-xs font-semibold text-slate-600' : 'px-4 py-1.5 rounded-full text-xs font-semibold bg-indigo-600 text-white';
+      document.getElementById('btn-y').className = isY ? 'px-4 py-1.5 rounded-full text-xs font-semibold bg-indigo-600 text-white' : 'px-4 py-1.5 rounded-full text-xs font-semibold text-slate-600';
+    }
+  <\/script>
+</body>
+</html>
+\`\`\``;
+            }
+
+            if (personaKey === 'app-builder') {
+                return `Here is an interactive micro-app generated for: **"${escapeHtml(prompt)}"**\n\n\`\`\`html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script src="https://cdn.tailwindcss.com"><\/script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-6 font-sans">
+  <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 max-w-md w-full shadow-xl">
+    <div class="flex items-center gap-2 text-indigo-400 text-xs font-bold uppercase tracking-wider mb-2">
+      <span>Interactive Prototype</span>
+    </div>
+    <h2 class="text-xl font-bold mb-2">${escapeHtml(prompt)}</h2>
+    <p class="text-xs text-slate-400 mb-4">Add items or test interactive state below:</p>
+    <div class="flex gap-2 mb-4">
+      <input id="itemInput" type="text" placeholder="Type an entry..." class="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm outline-none focus:border-indigo-500">
+      <button onclick="addItem()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold">Add</button>
+    </div>
+    <ul id="list" class="space-y-2 text-sm">
+      <li class="p-3 rounded-xl bg-slate-900/70 flex justify-between items-center"><span>Sample Interactive Item</span><span class="text-xs text-emerald-400">Active</span></li>
+    </ul>
+  </div>
+  <script>
+    function addItem() {
+      const inp = document.getElementById('itemInput');
+      if (!inp.value.trim()) return;
+      const li = document.createElement('li');
+      li.className = 'p-3 rounded-xl bg-slate-900/70 flex justify-between items-center';
+      li.innerHTML = '<span>' + inp.value + '</span><button onclick="this.parentElement.remove()" class="text-xs text-rose-400">Remove</button>';
+      document.getElementById('list').appendChild(li);
+      inp.value = '';
+    }
+  <\/script>
+</body>
+</html>
+\`\`\``;
+            }
+
+            return `### Response for: "${prompt}"\n\nHere is a structured breakdown tailored to the **${PERSONA_CONFIG[personaKey]?.label || 'AI'}** persona:\n\n- **Core Concept:** ${prompt}\n- **Key Insight 1:** Breaking complex tasks into modular, testable components improves clarity and maintainability.\n- **Key Insight 2:** Interactive feedback loops help users validate ideas rapidly.\n\n| Metric | Status | Notes |\n| :--- | :--- | :--- |\n| Mode | ${PERSONA_CONFIG[personaKey]?.label} | Active |\n| Environment | Standalone Ready | Click **API Key** in header to connect your personal Gemini key |`;
+        }
+
+        // Main Generate Handler
+        async function handleGenerate() {
+            const prompt = els.promptInput.value.trim();
+            if (!prompt) {
+                showToast('Please enter a prompt first.', 'warning');
+                els.promptInput.focus();
+                return;
+            }
+            if (state.isGenerating) return;
+
+            state.isGenerating = true;
+            els.generateBtn.disabled = true;
+            els.generateBtnText.textContent = 'Generating...';
+            els.loadingOverlay.classList.remove('hidden');
+
+            try {
+                const { text, isDemo } = await callGeminiAPI(prompt, state.persona);
+                renderResponse(text, isDemo);
+
+                // Save to History
+                const historyEntry = {
+                    id: Date.now().toString(),
+                    prompt: prompt,
+                    persona: state.persona,
+                    response: text,
+                    isDemo: isDemo,
+                    timestamp: new Date().toISOString()
+                };
+                addHistoryItem(historyEntry);
+
+                if (isDemo) {
+                    showToast('Generated using built-in Demo Sandbox (add API key for live Gemini).', 'info');
+                } else {
+                    showToast('Response generated successfully!', 'success');
+                }
+            } catch (error) {
+                showToast('Something went wrong while generating response.', 'error');
+            } finally {
+                state.isGenerating = false;
+                els.generateBtn.disabled = false;
+                els.generateBtnText.textContent = 'Generate Response';
+                els.loadingOverlay.classList.add('hidden');
+            }
+        }
+
+        // History Storage & Rendering
+        function loadHistoryFromStorage() {
+            try {
+                const raw = localStorage.getItem('ai_playground_history');
+                state.history = raw ? JSON.parse(raw) : [];
+            } catch (e) {
+                state.history = [];
+            }
+            renderHistoryList();
+        }
+
+        function saveHistoryToStorage() {
+            try {
+                localStorage.setItem('ai_playground_history', JSON.stringify(state.history));
+            } catch (e) {
+                console.warn('Could not save to localStorage');
+            }
+        }
+
+        function addHistoryItem(item) {
+            state.history.unshift(item);
+            if (state.history.length > 50) state.history.pop();
+            saveHistoryToStorage();
+            renderHistoryList();
+        }
+
+        function renderHistoryList(filterQuery = '') {
+            const q = filterQuery.toLowerCase().trim();
+            const filtered = state.history.filter(item => 
+                item.prompt.toLowerCase().includes(q) || 
+                (PERSONA_CONFIG[item.persona]?.label || '').toLowerCase().includes(q)
+            );
+
+            els.historyCount.textContent = state.history.length;
+
+            // Remove old cards except empty state
+            Array.from(els.historyList.children).forEach(child => {
+                if (child.id !== 'history-empty') child.remove();
+            });
+
+            if (filtered.length === 0) {
+                els.historyEmpty.classList.remove('hidden');
+                return;
+            }
+
+            els.historyEmpty.classList.add('hidden');
+
+            filtered.forEach(item => {
+                const pConfig = PERSONA_CONFIG[item.persona] || PERSONA_CONFIG['app-builder'];
+                const dateObj = new Date(item.timestamp);
+                const timeStr = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                const card = document.createElement('div');
+                card.className = 'group p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 hover:bg-white dark:hover:bg-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500/60 cursor-pointer transition-all';
+                card.innerHTML = `
+                    <div class="flex items-center justify-between gap-2 mb-1.5">
+                        <span class="inline-flex items-center gap-1.5 text-[10px] font-semibold px-2 py-0.5 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+                            <i class="fa-solid ${pConfig.icon} ${pConfig.color}"></i>
+                            ${pConfig.label}
+                        </span>
+                        <span class="text-[10px] text-slate-400">${timeStr}</span>
+                    </div>
+                    <p class="text-xs font-medium text-slate-800 dark:text-slate-200 line-clamp-2 leading-snug">${escapeHtml(item.prompt)}</p>
+                `;
+
+                card.addEventListener('click', () => {
+                    els.promptInput.value = item.prompt;
+                    updateCharCount();
+                    selectPersona(item.persona);
+                    renderResponse(item.response, item.isDemo);
+                    toggleMobileSidebar(false);
+                    showToast('Loaded prompt from history', 'info');
+                });
+
+                els.historyList.appendChild(card);
+            });
+        }
+
+        // Clipboard Copy Helper (iFrame safe)
+        function copyToClipboard(text) {
+            if (!text) return;
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                document.execCommand('copy');
+                showToast('Copied to clipboard!', 'success');
+            } catch (err) {
+                showToast('Failed to copy text.', 'error');
+            }
+            document.body.removeChild(textarea);
+        }
+
+        // Download Standalone HTML File
+        function downloadExtractedHtml() {
+            if (!state.currentExtractedHtml) return;
+            const blob = new Blob([state.currentExtractedHtml], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `ai-generated-app-${Date.now()}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('Downloaded standalone HTML app!', 'success');
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, m => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[m]));
+        }
+
+        function updateCharCount() {
+            els.charCount.textContent = `${els.promptInput.value.length} chars`;
+        }
+
+        // Wire Up All Event Listeners
+        function setupEventListeners() {
+            els.themeToggle.addEventListener('click', toggleTheme);
+            els.mobileMenuBtn.addEventListener('click', () => toggleMobileSidebar());
+            els.sidebarBackdrop.addEventListener('click', () => toggleMobileSidebar(false));
+
+            els.personaBtns.forEach(btn => {
+                btn.addEventListener('click', () => selectPersona(btn.dataset.persona));
+            });
+
+            els.starterChips.forEach(chip => {
+                chip.addEventListener('click', () => {
+                    const prompt = chip.dataset.prompt;
+                    const persona = chip.dataset.persona;
+                    if (persona) selectPersona(persona);
+                    els.promptInput.value = prompt;
+                    updateCharCount();
+                    handleGenerate();
+                });
+            });
+
+            els.promptInput.addEventListener('input', updateCharCount);
+            els.promptInput.addEventListener('keydown', (e) => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                    e.preventDefault();
+                    handleGenerate();
+                }
+            });
+
+            els.clearPromptBtn.addEventListener('click', () => {
+                els.promptInput.value = '';
+                updateCharCount();
+                els.promptInput.focus();
+            });
+
+            els.generateBtn.addEventListener('click', handleGenerate);
+
+            els.resultTabs.forEach(tab => {
+                tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+            });
+
+            els.copyOutputBtn.addEventListener('click', () => {
+                if (!state.currentResponse) {
+                    showToast('Nothing to copy yet.', 'warning');
+                    return;
+                }
+                const contentToCopy = (state.activeTab === 'preview' && state.currentExtractedHtml)
+                    ? state.currentExtractedHtml
+                    : state.currentResponse;
+                copyToClipboard(contentToCopy);
+            });
+
+            els.downloadHtmlBtn.addEventListener('click', downloadExtractedHtml);
+
+            els.historySearch.addEventListener('input', (e) => {
+                renderHistoryList(e.target.value);
+            });
+
+            els.clearHistoryBtn.addEventListener('click', () => {
+                if (state.history.length === 0) return;
+                state.history = [];
+                saveHistoryToStorage();
+                renderHistoryList();
+                showToast('Prompt history cleared.', 'info');
+            });
+
+            // Optional Custom API Key Modal
+            els.apiSettingsBtn.addEventListener('click', () => {
+                els.customApiKeyInput.value = state.customApiKey;
+                els.apiModal.classList.remove('hidden');
+            });
+            els.closeApiModal.addEventListener('click', () => els.apiModal.classList.add('hidden'));
+            els.saveApiKeyBtn.addEventListener('click', () => {
+                state.customApiKey = els.customApiKeyInput.value.trim();
+                localStorage.setItem('playground_custom_api_key', state.customApiKey);
+                els.apiModal.classList.add('hidden');
+                showToast('Custom API key saved locally.', 'success');
+            });
+            els.clearApiKeyBtn.addEventListener('click', () => {
+                state.customApiKey = '';
+                els.customApiKeyInput.value = '';
+                localStorage.removeItem('playground_custom_api_key');
+                els.apiModal.classList.add('hidden');
+                showToast('Reset to default environment API key.', 'info');
+            });
+        }
+
+        // Boot App
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
